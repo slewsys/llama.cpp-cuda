@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+#
+# Copyright © 2025 Revolution Robotics, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# @(#) install-asdf
+#
+# Install asdf version manager.
+#
+: ${CURL_CMD:=/usr/bin/curl}
+: ${ED_CMD:=/usr/local/bin/ed}
+: ${GIT_CMD:=/usr/bin/git}
+: ${HEAD_CMD:=/usr/bin/head}
+: ${MKDIR_CMD:=/bin/mkdir}
+: ${TAR_CMD:=/usr/bin/tar}
+: ${TR_CMD:=/usr/bin/tr}
+: ${UNAME_CMD:=/usr/bin/uname}
+
+get-latest-tag ()
+{
+    local url=$1
+
+    $ED_CMD -e 's;.*/;;p' <($GIT_CMD ls-remote --sort="-v:refname" "$url" | $HEAD_CMD -1 || true)
+}
+
+get-arch ()
+{
+    local machine=''
+
+    machine=$($UNAME_CMD -m) || return $?
+
+    case "$machine" in
+    x86_64)
+        echo amd64
+        ;;
+    *)
+        echo "$machine"
+        ;;
+    esac
+}
+
+if test ."$0" = ."${BASH_SOURCE[0]}"; then
+    declare asdf_url=https://github.com/asdf-vm/asdf
+
+    declare latest_version=''
+    declare os=''
+    declare arch=''
+
+    latest_version=$(get-latest-tag "$asdf_url") || exit $?
+    os=$($UNAME_CMD | $TR_CMD A-Z a-z) || exit $?
+    arch=$(get-arch) || exit $?
+
+    declare release_url=${asdf_url}/releases/download/${latest_version}/asdf-${latest_version}-${os}-${arch}.tar.gz
+
+    $MKDIR_CMD -p ~/bin || exit $?
+    $CURL_CMD -sSL "$release_url" | $TAR_CMD -C "${HOME}/bin" -zxf - || exit $?
+fi

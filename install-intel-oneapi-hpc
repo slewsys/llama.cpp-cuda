@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+# Copyright © 2025 Revolution Robotics, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# @(#) install-intel-oneapi-hpc
+#
+# Install Intel oneAPI HPC Toolkit on a Fedora system.
+#
+: ${DNF_CMD:='/usr/bin/dnf5'}
+: ${RPM_CMD:='/usr/bin/rpm'}
+: ${TEE_CMD:='/usr/bin/tee'}
+
+: ${ONEAPI_ROOT:='/opt/intel/oneapi'}
+
+install-intel-oneapi-hpc-toolkit ()
+{
+    $TEE_CMD -a /etc/yum.repos.d/oneAPI.repo >/dev/null <<EOF
+[oneAPI]
+name=Intel® oneAPI repository
+baseurl=https://yum.repos.intel.com/oneapi
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+EOF
+
+    $RPM_CMD --import https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+    $DNF_CMD clean all
+    $DNF_CMD install -y intel-oneapi-hpc-toolkit
+}
+
+if test ."$0" = ."${BASH_SOURCE[0]}"; then
+    if (( EUID != 0 )); then
+        echo 'Error: This script must be run with root privileges.' >&2
+        exit 1
+    fi
+
+    echo "Installing Intel OneAPI HPC Toolkit" >&2
+
+    install-intel-oneapi-hpc-toolkit
+fi

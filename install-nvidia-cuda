@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+#
+# Copyright © 2025 Revolution Robotics, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# @(#) install-nvidia-cuda
+#
+: ${CURL_CMD:='/usr/bin/curl'}
+: ${DNF_CMD:='/usr/bin/dnf5'}
+: ${HTMLQ_CMD:="${HOME}/.asdf/shims/htmlq"}
+: ${SORT_CMD:='/usr/bin/sort'}
+: ${TAR_CMD:='/usr/bin/gtar'}
+: ${TAIL_CMD:='/usr/bin/tail'}
+
+: ${DISTRO:='fedora42'}
+: ${CUDA_REPOS:='https://developer.download.nvidia.com/compute/cuda/repos'}
+: ${CUDNN_REDIST:='https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64'}
+
+install-cuda-repo ()
+{
+    $DNF_CMD config-manager addrepo \
+             --from-repofile="${CUDA_REPOS}/${DISTRO}/x86_64/cuda-${DISTRO}.repo"
+}
+
+install-nvidia-driver ()
+{
+    $DNF_CMD clean expire-cache || return $?
+    $DNF_CMD install -y nvidia-open nvidia-driver \
+             nvidia-driver-cuda || return $?
+}
+
+install-nvidia-cuda ()
+{
+    $DNF_CMD -y install cuda-toolkit || return $?
+}
+
+install-nvidia-cudnn ()
+{
+    local cudnn_archive=''
+
+    cudnn_archive=$(
+        $CURL_CMD -sSL "${CUDNN_REDIST}" |
+            $HTMLQ_CMD --attribute href a |
+            $SORT_CMD -V |
+            $TAIL_CMD -1
+          ) || return $?
+    $CURL_CMD -sSL "${CUDNN_REDIST}/${cudnn_archive}" |
+        $TAR_CMD -C /usr/local/cuda/ --strip-components=1 \
+                 --keep-directory-symlink -Jxf - || return $?
+}
+
+if test ."$0" = ."${BASH_SOURCE[0]}"; then
+    if (( EUID != 0 )); then
+        echo 'Error: This script must be run with root privileges.' >&2
+        exit 1
+    fi
+
+    echo "Installing NVIDIA driver, CUDA, and cuDNN" >&2
+
+    install-cuda-repo || exit $?
+    install-nvidia-driver || exit $?
+    install-nvidia-cuda || exit $?
+    install-nvidia-cudnn || exit $?
+fi
