@@ -6,7 +6,7 @@
 #
 # @(#) install-llama.cpp-cuda
 #
-# This script builds and installs llama.cpp with CUDA and Intel cuBLAS support.
+# This script installs llama.cpp with CUDA and Intel cuBLAS support.
 #
 # NB: To run llama.cpp, add Intel oneAPI library paths to LD_LIBRARY_PATH, e.g.:
 #
@@ -15,26 +15,36 @@
 #         llama-server ...
 #
 : ${ASDF_CMD="${HOME}/bin/asdf"}
-: ${CAT_CMD:='/bin/cat'}
-: ${CMAKE_CMD:='/usr/bin/cmake'}
-: ${ED_CMD:='/usr/local/bin/ed'}
-: ${GIT_CMD:='/usr/bin/git'}
-: ${GREP_CMD:='/usr/bin/grep'}
-: ${MAKE_CMD:='/usr/bin/make'}
-: ${PATCH_CMD:='/usr/bin/patch'}
+: ${CAT_CMD:='@CAT_CMD@'}
+: ${CMAKE_CMD:='@CMAKE_CMD@'}
+: ${ED_CMD:='@ED_CMD@'}
+: ${GIT_CMD:='@GIT_CMD@'}
+: ${GREP_CMD:='@GREP_CMD@'}
+: ${MAKE_CMD:='@MAKE_CMD@'}
+: ${PATCH_CMD:='@PATCH_CMD@'}
 : ${PIP_CMD:="${HOME}/.asdf/shims/pip"}
-: ${READLINK_CMD:='/usr/bin/readlink'}
-: ${RM_CMD:='/bin/rm'}
-: ${SUDO_CMD:='/usr/bin/sudo'}
-: ${TAIL_CMD:='/usr/bin/tail'}
+: ${READLINK_CMD:='@READLINK_CMD@'}
+: ${RM_CMD:='@RM_CMD@'}
+: ${SUDO_CMD:='@SUDO_CMD@'}
+: ${TAIL_CMD:='@TAIL_CMD@'}
 
 : ${INSTALL_PREFIX:='/usr/local'}
+
+# OS-agnstoic readlink for existent files/directories.
+resolve-existing ()
+{
+    if $READLINK_CMD --version 2>&1 | $GREP_CMD -q 'coreutils'; then
+        $READLINK_CMD -e "$@"
+    else
+        $READLINK_CMD -f N "$@"
+    fi
+}
 
 check-oneapi-env ()
 {
     if test ."$ONEAPI_ROOT" = .''; then
         if test ! -d /opt/intel/oneapi; then
-            $SUDO_CMD ${script_dir}/install-intel-oneapi-hpc || return $?
+            $SUDO_CMD ${script_dir}/scripts/install-intel-oneapi-hpc || return $?
         fi
         source /opt/intel/oneapi/setvars.sh
     fi
@@ -43,7 +53,7 @@ check-oneapi-env ()
 check-cuda-env ()
 {
     if test ! -d /usr/local/cuda/bin; then
-        $SUDO_CMD ${script_dir}/install-nvidia-cuda || return $?
+        $SUDO_CMD ${script_dir}/scripts/install-nvidia-cuda || return $?
     fi
 
     if ! $GREP_CMD -q cuda <<<$PATH; then
@@ -98,7 +108,7 @@ EOF
                 ;;
         esac
     else
-        ${script_dir}/install-asdf || return $?
+        ${script_dir}/scripts/install-asdf || return $?
         $ASDF_CMD plugin add python || return $?
         latest=$($ASDF_CMD latest python 3.11)
         $ASDF_CMD install python "$latest" || return $?
@@ -113,89 +123,13 @@ EOF
     trap - 0 1 2 15 RETURN
 }
 
-fetch-llama.cpp ()
-{
-    local repo_url='https://github.com/ggml-org/llama.cpp.git'
-
-    if test ! -d llama.cpp; then
-        $GIT_CMD clone --single-branch --filter=tree:0 "$repo_url" || return $?
-    else
-        $GIT_CMD -C llama.cpp pull --rebase
-    fi
-}
-
-apply-patches ()
-{
-    local up_to_date=''
-
-    pushd "${script_dir}/llama.cpp" >/dev/null || return $?
-
-    trap 'popd >/dev/null; exit 1' 0 1 2 15 RETURN
-
-    up_to_date=$(
-        $GIT_CMD -C "${script_dir}/llama.cpp" log \
-                 --pretty=reference --grep 'Update Python requirements.'
-           ) || return $?
-
-    if test -z "$up_to_date" -a \
-            -f "${script_dir}/llama.cpp/requirements.txt"; then
-        $PATCH_CMD -d "${script_dir}/llama.cpp/requirements" \
-                   < "${script_dir}/patches/requirements.diff" || return $?
-        $PATCH_CMD -d "${script_dir}/llama.cpp/tools/mtmd" \
-                   < "${script_dir}/patches/mtmd-requirements.diff" || return $?
-        $PATCH_CMD -d "${script_dir}/llama.cpp/tools/server/tests" \
-                   < "${script_dir}/patches/server-tests-requirements.diff" || return $?
-        $CAT_CMD >&2 <<'EOF'
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! Enter git credentials for commit: 'Update Python requirements.': !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-EOF
-        $GIT_CMD -C "${script_dir}/llama.cpp" commit -a -m 'Update Python requirements.'
-
-        $PATCH_CMD -p1 -d "${script_dir}/llama.cpp" \
-                   < "${script_dir}/patches/abs-warning.diff" || return $?
-        $CAT_CMD >&2 <<'EOF'
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! Enter git credentials for commit: 'Fix compiler warning. abs() → std::labs().': !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-EOF
-        $GIT_CMD -C "${script_dir}/llama.cpp" commit -a -m 'Fix compiler warning. abs() → std::labs().'
-    fi
-
-    $PIP_CMD install -U -r "${script_dir}/llama.cpp/requirements.txt" || return $?
-    popd >/dev/null || return $?
-
-    trap - 0 1 2 15 RETURN
-}
-
-build-llama.cpp ()
-{
-    pushd "${script_dir}/llama.cpp" >/dev/null || return $?
-
-    trap 'popd >/dev/null; exit 1' 0 1 2 15 RETURN
-
-    $RM_CMD -rf build || return $?
-    $CMAKE_CMD -B build \
-               -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
-               -DCMAKE_INSTALL_RPATH="${INSTALL_PREFIX}/lib64" \
-               -DGGML_CUDA=ON \
-               -DLLAMA_CURL=ON \
-               -DGGML_BLAS=ON \
-               -DGGML_BLAS_VENDOR=Intel10_64lp \
-               -DCMAKE_C_COMPILER=icx \
-               -DCMAKE_CXX_COMPILER=icpx \
-               -DGGML_NATIVE=ON \
-               -DCMAKE_CUDA_ARCHITECTURES="86" \
-        || return $?
-
-    $MAKE_CMD -C build -j60
-    popd >/dev/null || return $?
-
-    trap - 0 1 2 15 RETURN
-}
-
 install-llama.cpp ()
 {
+    if test ! -d "${script_dir}/llama.cpp/build"; then
+        echo "llama.cpp not found. Please build first." >&2
+        return 1
+    fi
+
     $SUDO_CMD $MAKE_CMD -C "${script_dir}/llama.cpp/build" install || return $?
 
     # gguf.py support for MXFP4 not yet released.
@@ -203,7 +137,7 @@ install-llama.cpp ()
 
     trap 'popd >/dev/null; exit 1' 0 1 2 15 RETURN
 
-    pip install . || return $?
+    $PIP_CMD install . || return $?
     popd >/dev/null || return $?
 
     trap - 0 1 2 15 RETURN
@@ -225,20 +159,24 @@ EOF
 if test ."$0" = ."${BASH_SOURCE[0]}"; then
     declare script=''
     declare script_dir=''
+    declare script_name=''
 
-    script=$($READLINK_CMD -e "$0") || exit $?
+    script=$(resolve-existing "$0") || exit $?
+    script_name=${script##*/}
     script_dir=${script%/*}
 
-    echo "Building and installing llama.cpp with CUDA and Intel cuBLAS support" >&2
+    if (( EUID == 0 )); then
+        echo "${script_name}: This script must not be run by user root." >&2
+        exit 1
+    fi
+
+    echo "Installing llama.cpp with CUDA and Intel cuBLAS support" >&2
 
     declare py_version='3\.11'
 
     check-oneapi-env || exit $?
     check-cuda-env || exit $?
     verify-python "$py_version" || exit $?
-    fetch-llama.cpp || exit $?
-    apply-patches || exit $?
-    build-llama.cpp || exit $?
     install-llama.cpp || exit $?
     caveat-utilitor
 fi
