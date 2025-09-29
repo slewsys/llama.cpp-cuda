@@ -184,7 +184,7 @@ build-llama.cpp ()
     $RM_CMD -rf build || return $?
     $CMAKE_CMD -B build \
                -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
-               -DCMAKE_INSTALL_RPATH="${INSTALL_PREFIX}/lib64" \
+               -DCMAKE_INSTALL_RPATH="${INSTALL_PREFIX}/lib64;${ONEAPI_ROOT}/compiler/2025.2/lib;${ONEAPI_ROOT}/mkl/2025.2/lib" \
                -DGGML_CUDA=ON \
                -DLLAMA_CURL=ON \
                -DGGML_BLAS=ON \

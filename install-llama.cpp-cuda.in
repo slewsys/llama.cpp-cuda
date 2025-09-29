@@ -8,12 +8,6 @@
 #
 # This script installs llama.cpp with CUDA and Intel cuBLAS support.
 #
-# NB: To run llama.cpp, add Intel oneAPI library paths to LD_LIBRARY_PATH, e.g.:
-#
-#         : ${ONEAPI_ROOT:='/opt/intel/oneapi'}
-#         source ${ONEAPI_ROOT}/setvars.sh
-#         llama-server ...
-#
 : ${ASDF_CMD="${HOME}/bin/asdf"}
 : ${CAT_CMD:='@CAT_CMD@'}
 : ${CMAKE_CMD:='@CMAKE_CMD@'}
@@ -143,19 +137,6 @@ install-llama.cpp ()
     trap - 0 1 2 15 RETURN
 }
 
-caveat-utilitor ()
-{
-    $CAT_CMD >&2 <<'EOF'
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! NB: To run llama.cpp, add Intel oneAPI library paths to LD_LIBRARY_PATH, e.g.: !!
-!!                                                                                !!
-!!        : ${ONEAPI_ROOT:='/opt/intel/oneapi'}                                   !!
-!!        source ${ONEAPI_ROOT}/setvars.sh                                        !!
-!!        llama-server ...                                                        !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-EOF
-}
-
 if test ."$0" = ."${BASH_SOURCE[0]}"; then
     declare script=''
     declare script_dir=''
@@ -178,5 +159,4 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
     check-cuda-env || exit $?
     verify-python "$py_version" || exit $?
     install-llama.cpp || exit $?
-    caveat-utilitor
 fi
