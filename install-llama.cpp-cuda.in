@@ -9,6 +9,7 @@
 # This script installs llama.cpp with CUDA and Intel cuBLAS support.
 #
 : ${ASDF_CMD="${HOME}/bin/asdf"}
+: ${AWK_CMD:='@AWK_CMD@'}
 : ${CAT_CMD:='@CAT_CMD@'}
 : ${CMAKE_CMD:='@CMAKE_CMD@'}
 : ${ED_CMD:='@ED_CMD@'}
@@ -21,6 +22,7 @@
 : ${RM_CMD:='@RM_CMD@'}
 : ${SUDO_CMD:='@SUDO_CMD@'}
 : ${TAIL_CMD:='@TAIL_CMD@'}
+: ${UPDATE_ALTERNATIVES_CMD:='@UPDATE_ALTERNATIVES_CMD@'}
 
 : ${INSTALL_PREFIX:='/usr/local'}
 
@@ -31,6 +33,21 @@ resolve-existing ()
         $READLINK_CMD -e "$@"
     else
         $READLINK_CMD -f N "$@"
+    fi
+}
+
+set-alternatives ()
+{
+    local name=$1
+    local path=$2
+
+    if command -v "$UPDATE_ALTERNATIVES_CMD" >/dev/null; then
+        if $UPDATE_ALTERNATIVES_CMD --list |
+                $AWK_CMD '{ print $1 }' |
+                $GREP_CMD -q "^${name}\>" &&
+                test -f "$path"; then
+            $SUDO_CMD $UPDATE_ALTERNATIVES_CMD --set "$name" "$path"
+        fi
     fi
 }
 
@@ -155,6 +172,9 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
 
     declare py_version='3\.11'
 
+    set-alternatives cc /usr/bin/cc-15 || exit $?
+    set-alternatives c++ /usr/bin/c++-15 || exit $?
+    set-alternatives cuda /usr/local/cuda-13.0
     check-oneapi-env || exit $?
     check-cuda-env || exit $?
     verify-python "$py_version" || exit $?
