@@ -99,15 +99,15 @@ EOF
                 ;;
             *)
                 $ASDF_CMD plugin add python || return $?
-                latest=$($ASDF_CMD latest python 3.11)
+                latest=$(eval $ASDF_CMD latest python "$version")
                 $ASDF_CMD install python "$latest" || return $?
                 $ASDF_CMD set python "$latest" || return $?
                 ;;
         esac
     else
-        ${script_dir}/scripts/install-asdf || return $?
+        ${script_dir}/install-asdf || return $?
         $ASDF_CMD plugin add python || return $?
-        latest=$($ASDF_CMD latest python 3.11)
+        latest=$(eval $ASDF_CMD latest python "$version")
         $ASDF_CMD install python "$latest" || return $?
         $ASDF_CMD set python "$latest" || return $?
         $ASDF_CMD reshim python || return $?
