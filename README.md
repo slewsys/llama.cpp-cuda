@@ -26,7 +26,7 @@ export PATH=${ASDF_DATA_DIR}/shims:${PATH}:${HOME}/bin
 ```
 
 NB: The latest CUDA Toolkit (currently 13.0) and Intel OneAPI HPC
-Toolkit (currently 2025.2) are installed and used to build llama.cpp.
+Toolkit (currently 2025.3) are installed and used to build llama.cpp.
 To build vLLM, CUDA Toolkit 12.9 might be required. That's okay - CUDA
 Toolkits 13.0 and 12.9 can coexist.
 

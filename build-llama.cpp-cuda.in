@@ -26,6 +26,7 @@
 : ${TAIL_CMD:='@TAIL_CMD@'}
 
 : ${INSTALL_PREFIX:='/usr/local'}
+: ${CUDA_ROOT:='/usr/local/cuda'}
 
 # OS-agnstoic readlink for existent files/directories.
 resolve-existing ()
@@ -49,12 +50,12 @@ check-oneapi-env ()
 
 check-cuda-env ()
 {
-    if test ! -d /usr/local/cuda/bin; then
+    if test ! -d "${CUDA_ROOT}/bin"; then
         $SUDO_CMD ${script_dir}/scripts/install-nvidia-cuda || return $?
     fi
 
     if ! $GREP_CMD -q cuda <<<$PATH; then
-        export PATH=/usr/local/cuda/bin:${PATH}
+        export PATH=${CUDA_ROOT}/bin:${PATH}
     fi
 
     if ! command -v nvcc >/dev/null; then
@@ -184,7 +185,7 @@ build-llama.cpp ()
     $RM_CMD -rf build || return $?
     $CMAKE_CMD -B build \
                -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
-               -DCMAKE_INSTALL_RPATH="${INSTALL_PREFIX}/lib64;${ONEAPI_ROOT}/compiler/2025.2/lib;${ONEAPI_ROOT}/mkl/2025.2/lib" \
+               -DCMAKE_INSTALL_RPATH="${INSTALL_PREFIX}/lib64;${CUDA_ROOT}/targets/x86_64-linux/lib;${ONEAPI_ROOT}/compiler/latest/lib;${ONEAPI_ROOT}/mkl/latest/lib" \
                -DGGML_CUDA=ON \
                -DLLAMA_CURL=ON \
                -DGGML_BLAS=ON \
@@ -192,8 +193,15 @@ build-llama.cpp ()
                -DCMAKE_C_COMPILER=icx \
                -DCMAKE_CXX_COMPILER=icpx \
                -DGGML_NATIVE=ON \
-               -DCMAKE_CUDA_ARCHITECTURES="86" \
         || return $?
+
+# OneAPI CMake options
+#               -DCMAKE_INSTALL_RPATH="${INSTALL_PREFIX}/lib64;${CUDA_ROOT}/targets/x86_64-linux/lib;${ONEAPI_ROOT}/compiler/latest/lib;${ONEAPI_ROOT}/mkl/latest/lib" \
+#               -DGGML_BLAS=ON \
+#               -DGGML_BLAS_VENDOR=Intel10_64lp \
+#               -DCMAKE_C_COMPILER=icx \
+#               -DCMAKE_CXX_COMPILER=icpx \
+#               -DGGML_NATIVE=ON \
 
     $MAKE_CMD -C build -j60
     popd >/dev/null || return $?
