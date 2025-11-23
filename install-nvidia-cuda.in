@@ -20,6 +20,7 @@
 install-cuda-repo ()
 {
     $DNF_CMD config-manager addrepo \
+             --overwrite \
              --from-repofile="${CUDA_REPOS}/${DISTRO}/x86_64/cuda-${DISTRO}.repo"
 }
 
