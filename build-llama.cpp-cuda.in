@@ -159,15 +159,6 @@ apply-patches ()
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 EOF
         $GIT_CMD -C "${script_dir}/llama.cpp" commit -a -m 'Update Python requirements.'
-
-        $PATCH_CMD -p1 -d "${script_dir}/llama.cpp" \
-                   < "${abs_srcdir}/patches/abs-warning.diff" || return $?
-        $CAT_CMD >&2 <<'EOF'
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! Enter git credentials for commit: 'Fix compiler warning. abs() → std::labs().': !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-EOF
-        $GIT_CMD -C "${script_dir}/llama.cpp" commit -a -m 'Fix compiler warning. abs() → std::labs().'
     fi
 
     $PIP_CMD install -U -r "${script_dir}/llama.cpp/requirements.txt" || return $?
