@@ -22,8 +22,8 @@
 : ${PIP_CMD:="${HOME}/.asdf/shims/pip"}
 : ${READLINK_CMD:='@READLINK_CMD@'}
 : ${RM_CMD:='@RM_CMD@'}
+: ${SORT_CMD:='@SORT_CMD@'}
 : ${SUDO_CMD:='@SUDO_CMD@'}
-: ${TAIL_CMD:='@TAIL_CMD@'}
 
 : ${INSTALL_PREFIX:='/usr/local'}
 : ${CUDA_ROOT:='/usr/local/cuda'}
@@ -82,10 +82,10 @@ verify-python ()
         fi
 
         python_available=$(
-            $ED_CMD -s <($ASDF_CMD list) <<EOF | $TAIL_CMD -1
+            $ED_CMD -s <($ASDF_CMD list) <<EOF
 g/^python/1,.d
-g/^[a-z]/.,$d
-,!$GREP_CMD "$version"
+g/^[a-z]/.,\$d
+, !$GREP_CMD "$version" | $SORT_CMD -V
 p
 Q
 EOF
