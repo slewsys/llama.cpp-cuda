@@ -55,7 +55,7 @@ check-oneapi-env ()
 {
     if test ."$ONEAPI_ROOT" = .''; then
         if test ! -d /opt/intel/oneapi; then
-            $SUDO_CMD ${script_dir}/scripts/install-intel-oneapi-hpc || return $?
+            $SUDO_CMD ${script_dir}/install-intel-oneapi-hpc || return $?
         fi
         source /opt/intel/oneapi/setvars.sh
     fi
@@ -64,7 +64,7 @@ check-oneapi-env ()
 check-cuda-env ()
 {
     if test ! -d /usr/local/cuda/bin; then
-        $SUDO_CMD ${script_dir}/scripts/install-nvidia-cuda || return $?
+        $SUDO_CMD ${script_dir}/install-nvidia-cuda || return $?
     fi
 
     if ! $GREP_CMD -q cuda <<<$PATH; then
@@ -119,7 +119,7 @@ EOF
                 ;;
         esac
     else
-        ${script_dir}/scripts/install-asdf || return $?
+        ${script_dir}/install-asdf || return $?
         $ASDF_CMD plugin add python || return $?
         latest=$($ASDF_CMD latest python 3.11)
         $ASDF_CMD install python "$latest" || return $?
