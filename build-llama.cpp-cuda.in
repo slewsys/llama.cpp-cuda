@@ -141,7 +141,8 @@ fetch-llama.cpp ()
     local repo_url='https://github.com/ggml-org/llama.cpp.git'
 
     if test ! -d llama.cpp; then
-        $GIT_CMD clone --single-branch --filter=tree:0 "$repo_url" || return $?
+        # $GIT_CMD clone --single-branch --filter=tree:0 "$repo_url" || return $?
+        $GIT_CMD clone "$repo_url" || return $?
     else
         $GIT_CMD -C llama.cpp pull --rebase
     fi
