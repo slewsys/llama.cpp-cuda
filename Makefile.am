@@ -29,12 +29,12 @@ install-exec-local: install-llama.cpp-cuda
 clean:
 	rm -rf llama.cpp
 
-build-llama.cpp-cuda: build-llama.cpp-cuda.in
+build-llama.cpp-cuda: $(top_srcdir)/build-llama.cpp-cuda.in
 
-install-asdf: install-asdf.in
+install-asdf: $(top_srcdir)/install-asdf.in
 
-install-llama.cpp-cuda: install-llama.cpp-cuda.in
+install-llama.cpp-cuda: $(top_srcdir)/install-llama.cpp-cuda.in
 
-install-intel-oneapi-hpc: install-intel-oneapi-hpc.in
+install-intel-oneapi-hpc: $(top_srcdir)/install-intel-oneapi-hpc.in
 
-install-nvidia-cuda: install-nvidia-cuda.in
+install-nvidia-cuda: $(top_srcdir)/install-nvidia-cuda.in
