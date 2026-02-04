@@ -52,7 +52,7 @@
 -numpy~=1.26.4
 +matplotlib~=3.10.6
 +numpy~=2.0.2
- openai~=1.55.3
+ openai~=2.14.0
 -pandas~=2.2.3
 +pandas~=2.3.2
  prometheus-client~=0.20.0
