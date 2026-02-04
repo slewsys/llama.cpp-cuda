@@ -111,7 +111,13 @@ EOF
                 : Nothing to do
                 ;;
             *${version}*)
-                echo "python${python_available}" >>${script_dir}/.tool-versions
+                if test -f "${script_dir}/.tool-versions"; then
+                    $CP_CMD -a "${script_dir}/.tool-versions"{,."$script_name"} || return $?
+                    $SED_CMD -i -e "s/^python.*/python${python_available}/" \
+                             "${script_dir}/.tool-versions" || return $?
+                else
+                    echo "python${python_available}" >${script_dir}/.tool-versions
+                fi
                 ;;
             *)
                 $ASDF_CMD plugin add python || return $?
