@@ -4,7 +4,7 @@
 #
 BUILD_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
-bin_SCRIPTS = install-llama.cpp-cuda
+bin_SCRIPTS = build-llama.cpp-cuda install-llama.cpp-cuda
 EXTRA_DIST = build-llama.cpp-cuda.in \
 	     install-asdf.in \
 	     install-intel-oneapi-hpc.in \

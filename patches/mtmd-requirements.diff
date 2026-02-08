@@ -1,10 +1,10 @@
---- requirements.txt.dist	2025-09-10 09:24:53.014414039 -0400
-+++ requirements.txt	2025-09-10 09:25:23.322427657 -0400
+--- tools/mtmd/requirements.txt~	2026-02-08 19:52:12.486033895 -0500
++++ tools/mtmd/requirements.txt	2026-02-08 19:52:24.413431547 -0500
 @@ -1,5 +1,5 @@
  -r ../../requirements/requirements-convert_legacy_llama.txt
  --extra-index-url https://download.pytorch.org/whl/cpu
  pillow~=11.3.0
 -torch~=2.6.0
 -torchvision~=0.21.0
-+torch~=2.8.0
-+torchvision~=0.23.0
++torch~=2.10.0
++torchvision~=0.25.0

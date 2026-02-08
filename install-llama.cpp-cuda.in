@@ -25,6 +25,8 @@
 : ${UPDATE_ALTERNATIVES_CMD:='@UPDATE_ALTERNATIVES_CMD@'}
 
 : ${INSTALL_PREFIX:='/usr/local'}
+: ${NVIDIA_CUDA_ROOT:='/usr/local/cuda'}
+: ${INTEL_ONEAPI_ROOT:='/opt/intel/oneapi'}
 
 # OS-agnstoic readlink for existent files/directories.
 resolve-existing ()
@@ -54,25 +56,25 @@ set-alternatives ()
 check-oneapi-env ()
 {
     if test ."$ONEAPI_ROOT" = .''; then
-        if test ! -d /opt/intel/oneapi; then
-            $SUDO_CMD ${script_dir}/install-intel-oneapi-hpc || return $?
+        if test ! -d "$INTEL_ONEAPI_ROOT"; then
+            $SUDO_CMD "${script_dir}/install-intel-oneapi-hpc" || return $?
         fi
-        source /opt/intel/oneapi/setvars.sh
+        source "${INTEL_ONEAPI_ROOT}/setvars.sh"
     fi
 }
 
 check-cuda-env ()
 {
-    if test ! -d /usr/local/cuda/bin; then
-        $SUDO_CMD ${script_dir}/install-nvidia-cuda || return $?
+    if test ! -d "${NVIDIA_CUDA_ROOT}/bin"; then
+        $SUDO_CMD "${script_dir}/install-nvidia-cuda" || return $?
     fi
 
     if ! $GREP_CMD -q cuda <<<$PATH; then
-        export PATH=/usr/local/cuda/bin:${PATH}
+        export PATH=${NVIDIA_CUDA_ROOT}/bin:${PATH}
     fi
 
     if ! command -v nvcc >/dev/null; then
-        echo 'Error: CUDA installation not found in /usr/local/cuda/' >&2
+        echo "${script_name}: ${NVIDIA_CUDA_ROOT}: CUDA installation not found." >&2
         return 1
     fi
 }
@@ -83,7 +85,7 @@ verify-python ()
 
     pushd "${script_dir}" >/dev/null || return $?
 
-    trap 'popd >/dev/null; exit 1' 0 1 2 15 RETURN
+    trap 'exit 1' 0 1 2 15 RETURN
 
     if ! command -v "$ASDF_CMD" >/dev/null && test -x "${HOME}/bin/asdf"; then
         export PATH=${PATH}:${HOME}/bin
@@ -109,11 +111,17 @@ EOF
                 : Nothing to do
                 ;;
             *${version}*)
-                echo "python${python_available}" >>${script_dir}/.tool-versions
+                if test -f "${script_dir}/.tool-versions"; then
+                    $CP_CMD -a "${script_dir}/.tool-versions"{,."$script_name"} || return $?
+                    $SED_CMD -i -e "s/^python.*/python${python_available}/" \
+                             "${script_dir}/.tool-versions" || return $?
+                else
+                    echo "python${python_available}" >${script_dir}/.tool-versions
+                fi
                 ;;
             *)
                 $ASDF_CMD plugin add python || return $?
-                latest=$($ASDF_CMD latest python 3.11)
+                latest=$(eval $ASDF_CMD latest python "$version") || return $?
                 $ASDF_CMD install python "$latest" || return $?
                 $ASDF_CMD set python "$latest" || return $?
                 ;;
@@ -121,7 +129,7 @@ EOF
     else
         ${script_dir}/install-asdf || return $?
         $ASDF_CMD plugin add python || return $?
-        latest=$($ASDF_CMD latest python 3.11)
+        latest=$(eval $ASDF_CMD latest python "$version") || return $?
         $ASDF_CMD install python "$latest" || return $?
         $ASDF_CMD set python "$latest" || return $?
         $ASDF_CMD reshim python || return $?
@@ -136,22 +144,20 @@ EOF
 
 install-llama.cpp ()
 {
-    if test ! -d "${script_dir}/llama.cpp/build"; then
-        echo "llama.cpp not found. Please build first." >&2
+    local srcdir=$1
+
+    local builddir=${srcdir}/build
+
+    if test ! -d "$builddir"; then
+        echo "${script_name}: ${builddir}: No such file or directory." >&2
+        echo "${script_name}: Please build llama.cpp first." >&2
         return 1
     fi
 
-    $SUDO_CMD $MAKE_CMD -C "${script_dir}/llama.cpp/build" install || return $?
+    $SUDO_CMD $MAKE_CMD -C "$builddir" install || return $?
 
     # gguf.py support for MXFP4 not yet released.
-    pushd "${script_dir}/llama.cpp/gguf-py" >/dev/null || return $?
-
-    trap 'popd >/dev/null; exit 1' 0 1 2 15 RETURN
-
-    $PIP_CMD install . || return $?
-    popd >/dev/null || return $?
-
-    trap - 0 1 2 15 RETURN
+    $PIP_CMD install "${srcdir}/gguf-py" || return $?
 }
 
 if test ."$0" = ."${BASH_SOURCE[0]}"; then
@@ -170,14 +176,24 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
 
     echo "Installing llama.cpp with CUDA and Intel cuBLAS support" >&2
 
+    declare top_srcdir=''
+
+    top_srcdir=$(
+        cd "$script_dir" && $GIT_CMD rev-parse --show-toplevel
+              ) || true
+
+    declare abs_srcdir=${1:-"$top_srcdir"}
+    declare install_prefix=${2:-"$INSTALL_PREFIX"}
+
+    declare llama_srcdir=${script_dir}/src/llama.cpp
     declare py_version='3\.11'
 
-    set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
-    set-alternatives c++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
-    set-alternatives cuda /usr/local/cuda-13.1
+    # set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
+    # set-alternatives c++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
+    # set-alternatives cuda /usr/local/cuda-13.1
     # set-alternatives cuda /usr/local/cuda-13.0
     check-oneapi-env || exit $?
     check-cuda-env || exit $?
     verify-python "$py_version" || exit $?
-    install-llama.cpp || exit $?
+    install-llama.cpp "$llama_srcdir" || exit $?
 fi

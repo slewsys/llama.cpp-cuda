@@ -12,21 +12,26 @@
 # and used to install the latest Python 3.11.x.
 #
 : ${ASDF_CMD="${HOME}/bin/asdf"}
+: ${AWK_CMD:='@AWK_CMD@'}
 : ${CAT_CMD:='@CAT_CMD@'}
 : ${CMAKE_CMD:='@CMAKE_CMD@'}
 : ${ED_CMD:='@ED_CMD@'}
 : ${GIT_CMD:='@GIT_CMD@'}
 : ${GREP_CMD:='@GREP_CMD@'}
 : ${MAKE_CMD:='@MAKE_CMD@'}
+: ${NPROC_CMD:='@NPROC_CMD@'}
 : ${PATCH_CMD:='@PATCH_CMD@'}
 : ${PIP_CMD:="${HOME}/.asdf/shims/pip"}
 : ${READLINK_CMD:='@READLINK_CMD@'}
 : ${RM_CMD:='@RM_CMD@'}
 : ${SORT_CMD:='@SORT_CMD@'}
 : ${SUDO_CMD:='@SUDO_CMD@'}
+: ${TEE_CMD:='@TEE_CMD@'}
+: ${UPDATE_ALTERNATIVES_CMD:='@UPDATE_ALTERNATIVES_CMD@'}
 
 : ${INSTALL_PREFIX:='/usr/local'}
-: ${CUDA_ROOT:='/usr/local/cuda'}
+: ${NVIDIA_CUDA_ROOT:='/usr/local/cuda'}
+: ${INTEL_ONEAPI_ROOT:='/opt/intel/oneapi'}
 
 # OS-agnstoic readlink for existent files/directories.
 resolve-existing ()
@@ -56,25 +61,25 @@ set-alternatives ()
 check-oneapi-env ()
 {
     if test ."$ONEAPI_ROOT" = .''; then
-        if test ! -d /opt/intel/oneapi; then
-            $SUDO_CMD ${script_dir}/scripts/install-intel-oneapi-hpc || return $?
+        if test ! -d "$INTEL_ONEAPI_ROOT"; then
+            $SUDO_CMD "${script_dir}/install-intel-oneapi-hpc" || return $?
         fi
-        source /opt/intel/oneapi/setvars.sh
+        source "${INTEL_ONEAPI_ROOT}/setvars.sh"
     fi
 }
 
 check-cuda-env ()
 {
-    if test ! -d "${CUDA_ROOT}/bin"; then
-        $SUDO_CMD ${script_dir}/scripts/install-nvidia-cuda || return $?
+    if test ! -d "${NVIDIA_CUDA_ROOT}/bin"; then
+        $SUDO_CMD ${script_dir}/install-nvidia-cuda || return $?
     fi
 
     if ! $GREP_CMD -q cuda <<<$PATH; then
-        export PATH=${CUDA_ROOT}/bin:${PATH}
+        export PATH=${NVIDIA_CUDA_ROOT}/bin:${PATH}
     fi
 
     if ! command -v nvcc >/dev/null; then
-        echo 'Error: CUDA installation not found in /usr/local/cuda/' >&2
+        echo "${script_name}: ${NVIDIA_CUDA_ROOT}: CUDA installation not found." >&2
         return 1
     fi
 }
@@ -85,7 +90,7 @@ verify-python ()
 
     pushd "${script_dir}" >/dev/null || return $?
 
-    trap 'popd >/dev/null; exit 1' 0 1 2 15 RETURN
+    trap 'exit 1' 0 1 2 15 RETURN
 
     if ! command -v "$ASDF_CMD" >/dev/null && test -x "${HOME}/bin/asdf"; then
         export PATH=${PATH}:${HOME}/bin
@@ -100,7 +105,7 @@ verify-python ()
             $ED_CMD -s <($ASDF_CMD list) <<EOF
 g/^python/1,.d
 g/^[a-z]/.,\$d
-, !$GREP_CMD "$version" | $SORT_CMD -V
+,! $GREP_CMD "$version" | $SORT_CMD -V
 p
 Q
 EOF
@@ -121,7 +126,7 @@ EOF
                 ;;
             *)
                 $ASDF_CMD plugin add python || return $?
-                latest=$(eval $ASDF_CMD latest python "$version")
+                latest=$(eval $ASDF_CMD latest python "$version") || return $?
                 $ASDF_CMD install python "$latest" || return $?
                 $ASDF_CMD set python "$latest" || return $?
                 ;;
@@ -129,7 +134,7 @@ EOF
     else
         ${script_dir}/install-asdf || return $?
         $ASDF_CMD plugin add python || return $?
-        latest=$(eval $ASDF_CMD latest python "$version")
+        latest=$(eval $ASDF_CMD latest python "$version") || return $?
         $ASDF_CMD install python "$latest" || return $?
         $ASDF_CMD set python "$latest" || return $?
         $ASDF_CMD reshim python || return $?
@@ -142,76 +147,75 @@ EOF
     trap - 0 1 2 15 RETURN
 }
 
-fetch-llama.cpp ()
+clone-repo ()
 {
-    local repo_url='https://github.com/ggml-org/llama.cpp.git'
+    local repo_url=$1
+    local srcdir=$2
 
-    if test ! -d llama.cpp; then
-        # $GIT_CMD clone --single-branch --filter=tree:0 "$repo_url" || return $?
-        $GIT_CMD clone "$repo_url" || return $?
+    if test -d "${srcdir}/.git"; then
+        $GIT_CMD -C "$srcdir" pull --rebase || return $?
     else
-        $GIT_CMD -C llama.cpp pull --rebase
+        $INSTALL_CMD -d -m 0755 "${srcdir%/*}" || return $?
+        $GIT_CMD -C "${srcdir%/*}" clone "$repo_url" "${srcdir##*/}" || return $?
     fi
 }
 
-apply-patches ()
+patch-repo ()
 {
+    local srcdir=$1
+    local patchdir=$2
+
     local up_to_date=''
 
-    pushd "${script_dir}/llama.cpp" >/dev/null || return $?
-
-    trap 'popd >/dev/null; exit 1' 0 1 2 15 RETURN
-
     up_to_date=$(
-        $GIT_CMD -C "${script_dir}/llama.cpp" log \
-                 --pretty=reference --grep 'Update Python requirements.'
+        $GIT_CMD -C "$srcdir" log \
+                 --pretty=reference --grep 'Update Python scripts.'
            ) || return $?
 
-    if test -z "$up_to_date" -a \
-            -f "${script_dir}/llama.cpp/requirements.txt"; then
-        $PATCH_CMD -d "${script_dir}/llama.cpp/requirements" \
-                   < "${top_srcdir}/patches/requirements.diff" || return $?
-        $PATCH_CMD -d "${script_dir}/llama.cpp/tools/mtmd" \
-                   < "${top_srcdir}/patches/mtmd-requirements.diff" || return $?
-        $PATCH_CMD -d "${script_dir}/llama.cpp/tools/server/tests" \
-                   < "${top_srcdir}/patches/server-tests-requirements.diff" || return $?
-        $CAT_CMD >&2 <<'EOF'
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! Enter git credentials for commit: 'Update Python requirements.': !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-EOF
-        $GIT_CMD -C "${script_dir}/llama.cpp" commit -a -m 'Update Python requirements.'
+    if test ."$up_to_date" != .''; then
+        return 0
     fi
 
-    $PIP_CMD install -U -r "${script_dir}/llama.cpp/requirements.txt" || return $?
-    popd >/dev/null || return $?
+    local patchfile=''
+    local subdir=''
 
-    trap - 0 1 2 15 RETURN
+    for patchfile in "${patchdir}/"*.diff; do
+        subdir=$($ED_CMD -e '/^+++ /s;;;' -e 's;/[^/]*$;;p' "$patchfile") || return $?
+        $PATCH_CMD -d "${srcdir}/${subdir}" <"$patchfile" || return $?
+    done
+
+    $CAT_CMD >&2 <<'EOF'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Enter git credentials for commit: 'Assign golang path.': !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EOF
+    $GIT_CMD -C "$srcdir" commit -a -m 'Update Python scripts.'
 }
 
 build-llama.cpp ()
 {
-    pushd "${script_dir}/llama.cpp" >/dev/null || return $?
+    local srcdir=$1
+    local install_prefix=$2
 
-    trap 'popd >/dev/null; exit 1' 0 1 2 15 RETURN
+    local builddir=${srcdir}/build
 
-    $RM_CMD -rf build || return $?
-    $CMAKE_CMD -B build \
-               -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
-               -DCMAKE_INSTALL_RPATH="${INSTALL_PREFIX}/lib64;${CUDA_ROOT}/targets/x86_64-linux/lib;${ONEAPI_ROOT}/compiler/latest/lib;${ONEAPI_ROOT}/mkl/latest/lib" \
-               -DGGML_CUDA=ON \
-               -DLLAMA_CURL=ON \
-               -DGGML_BLAS=ON \
-               -DGGML_BLAS_VENDOR=Intel10_64lp \
-               -DCMAKE_C_COMPILER=icx \
-               -DCMAKE_CXX_COMPILER=icpx \
-               -DGGML_NATIVE=ON \
+    $RM_CMD -rf "$builddir" || return $?
+    $CMAKE_CMD \
+        -S "$srcdir" \
+        -B "$builddir" \
+        -DCMAKE_INSTALL_PREFIX="${install_prefix}" \
+        -DCMAKE_INSTALL_RPATH="${install_prefix}/lib64;${NVIDIA_CUDA_ROOT}/targets/x86_64-linux/lib;${ONEAPI_ROOT}/compiler/latest/lib;${ONEAPI_ROOT}/mkl/latest/lib" \
+        -DGGML_CUDA=ON \
+        -DLLAMA_CURL=ON \
+        -DGGML_BLAS=ON \
+        -DGGML_BLAS_VENDOR=Intel10_64lp \
+        -DCMAKE_C_COMPILER=icx \
+        -DCMAKE_CXX_COMPILER=icpx \
+        -DGGML_NATIVE=ON \
         || return $?
 
-    $MAKE_CMD -C build -j60 |& $TEE_CMD ${script_dir}/llama.cpp/buiild.OUT || return $?
-    popd >/dev/null || return $?
-
-    trap - 0 1 2 15 RETURN
+    $MAKE_CMD -C "$builddir" -j$($NPROC_CMD) VERBOSE=1 |&
+        $TEE_CMD "${script_dir}/build.OUT" || return $?
 }
 
 if test ."$0" = ."${BASH_SOURCE[0]}"; then
@@ -228,6 +232,18 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
         exit 1
     fi
 
+    declare top_srcdir=''
+
+    top_srcdir=$(
+        cd "$script_dir" && $GIT_CMD rev-parse --show-toplevel
+              ) || true
+
+    declare abs_srcdir=${1:-"$top_srcdir"}
+    declare install_prefix=${2:-"$INSTALL_PREFIX"}
+
+    declare llama_repo_url='https://github.com/ggml-org/llama.cpp.git'
+    declare llama_srcdir=${script_dir}/src/llama.cpp
+    declare llama_patchdir=${abs_srcdir}/patches
     declare py_version='3\.11'
     declare top_srcdir=''
 
@@ -235,14 +251,14 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
 
     echo "Building llama.cpp with CUDA and Intel cuBLAS support" >&2
 
-    set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
-    set-alternatives c++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
+    # set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
+    # set-alternatives c++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
     set-alternatives cuda /usr/local/cuda-13.1
     #set-alternatives cuda /usr/local/cuda-13.0
     check-oneapi-env || exit $?
     check-cuda-env || exit $?
     verify-python "$py_version" || exit $?
-    fetch-llama.cpp || exit $?
-    apply-patches || exit $?
-    build-llama.cpp || exit $?
+    clone-repo "$llama_repo_url" "$llama_srcdir" || exit $?
+    patch-repo "$llama_srcdir" "$llama_patchdir" || exit $?
+    build-llama.cpp "$llama_srcdir" "$install_prefix" || exit $?
 fi

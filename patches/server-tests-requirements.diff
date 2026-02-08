@@ -1,5 +1,5 @@
---- requirements.txt.dist	2025-09-10 09:28:04.653500143 -0400
-+++ requirements.txt	2025-09-10 09:29:28.761537940 -0400
+--- tools/server/tests/requirements.txt~	2026-02-08 19:53:39.042434943 -0500
++++ tools/server/tests/requirements.txt	2026-02-08 19:53:53.772779171 -0500
 @@ -1,8 +1,8 @@
 -aiohttp~=3.9.3
 -pytest~=8.3.3
@@ -7,7 +7,7 @@
 +pytest~=8.3.5
  huggingface_hub>=0.34.0,<1.0
 -numpy~=1.26.4
-+numpy~=2.0.2
++numpy~=2.4.2
  openai~=2.14.0
  prometheus-client~=0.20.0
 -requests~=2.32.3
