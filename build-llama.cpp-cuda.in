@@ -206,7 +206,6 @@ build-llama.cpp ()
         -DCMAKE_INSTALL_PREFIX="${install_prefix}" \
         -DCMAKE_INSTALL_RPATH="${install_prefix}/lib64;${NVIDIA_CUDA_ROOT}/targets/x86_64-linux/lib;${ONEAPI_ROOT}/compiler/latest/lib;${ONEAPI_ROOT}/mkl/latest/lib" \
         -DGGML_CUDA=ON \
-        -DLLAMA_CURL=ON \
         -DGGML_BLAS=ON \
         -DGGML_BLAS_VENDOR=Intel10_64lp \
         -DCMAKE_C_COMPILER=icx \
