@@ -32,6 +32,7 @@
 : ${INSTALL_PREFIX:='/usr/local'}
 : ${NVIDIA_CUDA_ROOT:='/usr/local/cuda'}
 : ${INTEL_ONEAPI_ROOT:='/opt/intel/oneapi'}
+: ${GPU_ARCHITECTURES:='@GPU_ARCHITECTURES@'}
 
 # OS-agnstoic readlink for existent files/directories.
 resolve-existing ()
@@ -185,9 +186,9 @@ patch-repo ()
     done
 
     $CAT_CMD >&2 <<'EOF'
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! Enter git credentials for commit: 'Assign golang path.': !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Enter git credentials for commit: 'Update Python scripts.': !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 EOF
     $GIT_CMD -C "$srcdir" commit -a -m 'Update Python scripts.'
 }
@@ -196,6 +197,13 @@ build-llama.cpp ()
 {
     local srcdir=$1
     local install_prefix=$2
+    local gpu_architectures=$3
+
+    local cmake_cuda_architectures=''
+
+    if test ."$gpu_architectures" != .''; then
+        cmake_cuda_architectures=-CMAKE_CUDA_ARCHITECTURES="$gpu_architectures"
+    fi
 
     local builddir=${srcdir}/build
 
@@ -206,11 +214,11 @@ build-llama.cpp ()
         -DCMAKE_INSTALL_PREFIX="${install_prefix}" \
         -DCMAKE_INSTALL_RPATH="${install_prefix}/lib64;${NVIDIA_CUDA_ROOT}/targets/x86_64-linux/lib;${ONEAPI_ROOT}/compiler/latest/lib;${ONEAPI_ROOT}/mkl/latest/lib" \
         -DGGML_CUDA=ON \
+        $cmake_cuda_architectures \
         -DGGML_BLAS=ON \
         -DGGML_BLAS_VENDOR=Intel10_64lp \
         -DCMAKE_C_COMPILER=icx \
         -DCMAKE_CXX_COMPILER=icpx \
-        -DGGML_NATIVE=ON \
         || return $?
 
     $MAKE_CMD -C "$builddir" -j$($NPROC_CMD) VERBOSE=1 |&
@@ -239,6 +247,7 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
 
     declare abs_srcdir=${1:-"$top_srcdir"}
     declare install_prefix=${2:-"$INSTALL_PREFIX"}
+    declare gpu_architectures=${3:-"$GPU_ARCHITECTURES"}
 
     declare llama_repo_url='https://github.com/ggml-org/llama.cpp.git'
     declare llama_srcdir=${script_dir}/src/llama.cpp
@@ -252,12 +261,13 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
 
     # set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
     # set-alternatives c++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
-    set-alternatives cuda /usr/local/cuda-13.1
-    #set-alternatives cuda /usr/local/cuda-13.0
+    # set-alternatives cuda /usr/local/cuda-13.0
+    # set-alternatives cuda /usr/local/cuda-13.1
+    set-alternatives cuda /usr/local/cuda-13.2
     check-oneapi-env || exit $?
     check-cuda-env || exit $?
     verify-python "$py_version" || exit $?
     clone-repo "$llama_repo_url" "$llama_srcdir" || exit $?
     patch-repo "$llama_srcdir" "$llama_patchdir" || exit $?
-    build-llama.cpp "$llama_srcdir" "$install_prefix" || exit $?
+    build-llama.cpp "$llama_srcdir" "$install_prefix" "$gpu_architectures" || exit $?
 fi

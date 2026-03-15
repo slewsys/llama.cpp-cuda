@@ -2,12 +2,22 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([zfs-rpms], [1.0.0], [])
+AC_INIT([llama.cpp-cuda], [1.1.0], [])
 AM_INIT_AUTOMAKE([foreign])
 
 HOME_PREFIX=${HOME}/bin${PATH_SEPARATOR}
 ASDF_PREFIX=${HOME}/.asdf/shims${PATH_SEPARATOR}
 LOCAL_PREFIX=/usr/local/sbin${PATH_SEPARATOR}/usr/local/bin${PATH_SEPARATOR}
+
+AC_MSG_CHECKING([if GPU architectures specified])
+AC_ARG_WITH([gpu-architectures],
+  [AS_HELP_STRING([--with-gpu-architectures=CAPABILITIES],
+    [CUDA Compute CAPABILITIES for, e.g. "86;89"])],
+  [], [with_gpu_architectures=''])
+if test ."$with_gpu_architectures" != .''; then
+    GPU_ARCHITECTURES="$with_gpu_architectures"
+    AC_SUBST([GPU_ARCHITECTURES], ["$GPU_ARCHITECTURES"])
+fi
 
 AC_MSG_CHECKING([whether to search optional path])
 AC_ARG_WITH([opt-path],
@@ -52,6 +62,7 @@ AC_PATH_PROGS([HTMLQ_CMD],      [htmlq],               [], [${ASDF_PREFIX}${PATH
 AC_PATH_PROGS([MAKE_CMD],       [gmake make],          [], [${OPT_PREFIX}${PATH}])
 AC_PATH_PROGS([MKDIR_CMD],      [gmkdir mkdir],        [], [${OPT_PREFIX}${PATH}])
 
+AC_PATH_PROG([NPROC_CMD],       [nproc],               [], [${OPT_PREFIX}${PATH}])
 AC_PATH_PROG([PATCH_CMD],       [patch],               [], [${OPT_PREFIX}${PATH}])
 AC_PATH_PROG([PIP_CMD],         [pip],                 [], [${ASDF_PREFIX}${PATH}])
 

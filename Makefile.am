@@ -19,7 +19,7 @@ AM_DEFAULT_SOURCE_EXT = .in
 all: llama.cpp-cuda
 
 llama.cpp-cuda: build-llama.cpp-cuda
-	$(BUILD_DIR)build-llama.cpp-cuda $(abs_srcdir)
+	$(BUILD_DIR)build-llama.cpp-cuda "$(abs_srcdir)" "$(prefix)" "$(GPU_ARCHITECTURES)"
 
 install: install-exec-local
 
