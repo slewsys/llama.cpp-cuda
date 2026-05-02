@@ -202,7 +202,7 @@ build-llama.cpp ()
     local cmake_cuda_architectures=''
 
     if test ."$gpu_architectures" != .''; then
-        cmake_cuda_architectures=-CMAKE_CUDA_ARCHITECTURES="$gpu_architectures"
+        cmake_cuda_architectures=-DCMAKE_CUDA_ARCHITECTURES="$gpu_architectures"
     fi
 
     local builddir=${srcdir}/build

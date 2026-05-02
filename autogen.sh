@@ -108,9 +108,26 @@ $script_name:
      To continue, optionally create and cd to a build directory, then
      run:
 
-             \$ \$top_srcdir/configure [--gpu-architectures=CAPABILITIES]
+             \$ \$top_srcdir/configure [--with-gpu-architectures=CAPABILITIES]
              \$ make
              \$ make install
+
+      where CAPABILITIES is a colon-separated list of GPU
+      architectures (e.g., '86;89') to build for, or 'all' to build
+      for all supported architectures. If not specified, the default
+      is 'native', which builds for the architecture of the host
+      machine.
+
+      CAPABILITY           DESCRIPTION
+      =====================================================
+          86               RTX 3050-3090, RTX A2000-6000
+          89               RTX 4090-4090, RTX 2000-6000 Ada
+          90               H100, 200, GH200
+         100               GB200
+         103               GB300
+         120               RTX 5050-5090, RTX Pro 2000-6000
+         121               GB10 (DGX Spark)
+      ------------------------------------------------------
 
 ------------------------------------------------------------------------
 EOF
