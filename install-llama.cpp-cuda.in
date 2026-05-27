@@ -48,7 +48,7 @@ set-alternatives ()
                 $AWK_CMD '{ print $1 }' |
                 $GREP_CMD -q "^${name}\>" &&
                 test -f "$path"; then
-            $SUDO_CMD $UPDATE_ALTERNATIVES_CMD --set "$name" "$path"
+            $SUDO_CMD -i $UPDATE_ALTERNATIVES_CMD --set "$name" "$path"
         fi
     fi
 }
@@ -57,7 +57,7 @@ check-oneapi-env ()
 {
     if test ."$ONEAPI_ROOT" = .''; then
         if test ! -d "$INTEL_ONEAPI_ROOT"; then
-            $SUDO_CMD "${script_dir}/install-intel-oneapi-hpc" || return $?
+            $SUDO_CMD -i "${script_dir}/install-intel-oneapi-hpc" || return $?
         fi
         source "${INTEL_ONEAPI_ROOT}/setvars.sh"
     fi
@@ -66,7 +66,7 @@ check-oneapi-env ()
 check-cuda-env ()
 {
     if test ! -d "${NVIDIA_CUDA_ROOT}/bin"; then
-        $SUDO_CMD "${script_dir}/install-nvidia-cuda" || return $?
+        $SUDO_CMD -i "${script_dir}/install-nvidia-cuda" || return $?
     fi
 
     if ! $GREP_CMD -q cuda <<<$PATH; then
@@ -154,7 +154,7 @@ install-llama.cpp ()
         return 1
     fi
 
-    $SUDO_CMD $MAKE_CMD -C "$builddir" install || return $?
+    $SUDO_CMD -i $MAKE_CMD -C "$builddir" install || return $?
 
     # gguf.py support for MXFP4 not yet released.
     $PIP_CMD install "${srcdir}/gguf-py" || return $?
@@ -188,10 +188,13 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
     declare llama_srcdir=${script_dir}/src/llama.cpp
     declare py_version='3\.11'
 
-    # set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
-    # set-alternatives c++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
-    # set-alternatives cuda /usr/local/cuda-13.1
-    # set-alternatives cuda /usr/local/cuda-13.0
+    set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
+    set-alternatives g++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
+    set-alternatives gfortran /usr/bin/x86_64-linux-gnu-gfortran-15 || exit $?
+    # set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-16 || exit $?
+    # set-alternatives g++ /usr/bin/x86_64-linux-gnu-g++-16 || exit $?
+    # set-alternatives gfortran /usr/bin/x86_64-linux-gnu-gfortran-16 || exit $?
+    set-alternatives cuda /usr/local/cuda-13.3 || exit $?
     check-oneapi-env || exit $?
     check-cuda-env || exit $?
     verify-python "$py_version" || exit $?

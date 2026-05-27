@@ -13,7 +13,7 @@
 : ${TAR_CMD:='/usr/bin/gtar'}
 : ${TAIL_CMD:='/usr/bin/tail'}
 
-: ${DISTRO:='fedora42'}
+: ${DISTRO:='fedora43'}
 : ${CUDA_REPOS:='https://developer.download.nvidia.com/compute/cuda/repos'}
 : ${CUDNN_REDIST:='https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64'}
 

@@ -1,11 +1,10 @@
 --- tools/server/tests/requirements.txt~	2026-02-08 19:53:39.042434943 -0500
 +++ tools/server/tests/requirements.txt	2026-02-08 19:53:53.772779171 -0500
-@@ -1,8 +1,8 @@
+@@ -1,7 +1,7 @@
 -aiohttp~=3.9.3
 -pytest~=8.3.3
 +aiohttp~=3.9.5
 +pytest~=8.3.5
- huggingface_hub>=1.5.0,<2.0
 -numpy~=1.26.4
 +numpy~=2.4.2
  openai~=2.14.0
