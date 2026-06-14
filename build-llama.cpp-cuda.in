@@ -14,6 +14,7 @@
 : ${ASDF_CMD="${HOME}/bin/asdf"}
 : ${AWK_CMD:='@AWK_CMD@'}
 : ${CAT_CMD:='@CAT_CMD@'}
+: ${CHOWN_CMD:='@CHOWN_CMD@'}
 : ${CMAKE_CMD:='@CMAKE_CMD@'}
 : ${ED_CMD:='@ED_CMD@'}
 : ${GIT_CMD:='@GIT_CMD@'}
@@ -154,6 +155,7 @@ clone-repo ()
     local srcdir=$2
 
     if test -d "${srcdir}/.git"; then
+        $SUDO_CMD $CHOWN_CMD -R "${USER}:${USER}" "${srcdir}/build" || return $?
         $GIT_CMD -C "$srcdir" reset --hard HEAD || return $?
         $GIT_CMD -C "$srcdir" pull --rebase || return $?
     else
@@ -214,6 +216,7 @@ build-llama.cpp ()
     $CMAKE_CMD \
         -S "$srcdir" \
         -B "$builddir" \
+        -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="${install_prefix}" \
         -DCMAKE_INSTALL_RPATH="${install_prefix}/lib64;${NVIDIA_CUDA_ROOT}/targets/x86_64-linux/lib;${ONEAPI_ROOT}/compiler/latest/lib;${ONEAPI_ROOT}/mkl/latest/lib" \
         -DGGML_CUDA=ON \
@@ -262,12 +265,12 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
 
     echo "Building llama.cpp with CUDA and Intel cuBLAS support" >&2
 
-    set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
-    set-alternatives g++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
-    set-alternatives gfortran /usr/bin/x86_64-linux-gnu-gfortran-15 || exit $?
     # set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-16 || exit $?
     # set-alternatives g++ /usr/bin/x86_64-linux-gnu-g++-16 || exit $?
     # set-alternatives gfortran /usr/bin/x86_64-linux-gnu-gfortran-16 || exit $?
+    set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
+    set-alternatives g++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
+    set-alternatives gfortran /usr/bin/x86_64-linux-gnu-gfortran-15 || exit $?
     # set-alternatives cuda /usr/local/cuda-13.2 || exit $?
     set-alternatives cuda /usr/local/cuda-13.3 || exit $?
     check-oneapi-env || exit $?

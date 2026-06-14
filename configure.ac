@@ -46,6 +46,7 @@ AC_PATH_PROG([ASDF_CMD],        [asdf],                [], [${HOME_PREFIX}${PATH
 AC_PATH_PROGS([AWK_CMD],        [gawk awk],            [], [${OPT_PREFIX}${PATH}])
 AC_PATH_PROGS([CAT_CMD],        [gcat cat],            [], [${OPT_PREFIX}${PATH}])
 
+AC_PATH_PROG([CHOWN_CMD],       [chown],               [], [${OPT_PREFIX}${PATH}])
 AC_PATH_PROG([CMAKE_CMD],       [cmake],               [], [${OPT_PREFIX}${PATH}])
 AC_PATH_PROG([CURL_CMD],        [curl],                [], [${OPT_PREFIX}${PATH}])
 

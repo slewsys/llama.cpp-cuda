@@ -27,7 +27,7 @@ install-exec-local: install-llama.cpp-cuda
 	$(BUILD_DIR)install-llama.cpp-cuda
 
 clean:
-	rm -rf src/llama.cpp
+	sudo rm -rf $(BUILD_DIR)src/llama.cpp
 
 build-llama.cpp-cuda: $(top_srcdir)/build-llama.cpp-cuda.in
 
