@@ -9,7 +9,7 @@
 # This script builds llama.cpp with CUDA and Intel cuBLAS support.
 # Both the latest CUDA and Intel OneAPI hpc toolkit are installed as
 # needed. In addition, the asdf version manager is installed as needed
-# and used to install the latest Python 3.11.x.
+# and used to install the latest Python 3.14.x.
 #
 : ${ASDF_CMD="${HOME}/bin/asdf"}
 : ${AWK_CMD:='@AWK_CMD@'}
@@ -258,19 +258,19 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
     declare llama_repo_url='https://github.com/ggml-org/llama.cpp.git'
     declare llama_srcdir=${script_dir}/src/llama.cpp
     declare llama_patchdir=${abs_srcdir}/patches
-    declare py_version='3\.11'
+    declare py_version='3\.14'
     declare top_srcdir=''
 
     top_srcdir=$($GIT_CMD rev-parse --show-toplevel) || exit $?
 
     echo "Building llama.cpp with CUDA and Intel cuBLAS support" >&2
 
-    # set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-16 || exit $?
-    # set-alternatives g++ /usr/bin/x86_64-linux-gnu-g++-16 || exit $?
-    # set-alternatives gfortran /usr/bin/x86_64-linux-gnu-gfortran-16 || exit $?
     set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
     set-alternatives g++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
     set-alternatives gfortran /usr/bin/x86_64-linux-gnu-gfortran-15 || exit $?
+    # set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-16 || exit $?
+    # set-alternatives g++ /usr/bin/x86_64-linux-gnu-g++-16 || exit $?
+    # set-alternatives gfortran /usr/bin/x86_64-linux-gnu-gfortran-16 || exit $?
     # set-alternatives cuda /usr/local/cuda-13.2 || exit $?
     set-alternatives cuda /usr/local/cuda-13.3 || exit $?
     check-oneapi-env || exit $?

@@ -15,9 +15,11 @@
 : ${ED_CMD:='@ED_CMD@'}
 : ${GIT_CMD:='@GIT_CMD@'}
 : ${GREP_CMD:='@GREP_CMD@'}
+: ${INSTALL_CMD:='@INSTALL_CMD@'}
 : ${MAKE_CMD:='@MAKE_CMD@'}
 : ${PATCH_CMD:='@PATCH_CMD@'}
-: ${PIP_CMD:="${HOME}/.asdf/shims/pip"}
+: ${PIP_CMD:='@PIP_CMD@'}
+: ${PYTHON_CMD:='@PYTHON_CMD@'}
 : ${READLINK_CMD:='@READLINK_CMD@'}
 : ${RM_CMD:='@RM_CMD@'}
 : ${SORT_CMD:='@SORT_CMD@'}
@@ -155,9 +157,19 @@ install-llama.cpp ()
     fi
 
     $SUDO_CMD -i $MAKE_CMD -C "$builddir" install || return $?
+}
 
-    # gguf.py support for MXFP4 not yet released.
+install-scripts ()
+{
+    local srcdir=$1
+
+    local py_site_packages_dir=''
+
+    py_site_packages_dir=$($PYTHON_CMD -c 'import site; print(site.getsitepackages()[0])') || return $?
+
     $PIP_CMD install "${srcdir}/gguf-py" || return $?
+    $INSTALL_CMD -d -m 0755 "${install_prefix}/bin" || return $?
+    $INSTALL_CMD -d -m 0755 "${srcdir}/conversion"  "$py_site_packages_dir"|| return $?
 }
 
 if test ."$0" = ."${BASH_SOURCE[0]}"; then
@@ -186,7 +198,7 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
     declare install_prefix=${2:-"$INSTALL_PREFIX"}
 
     declare llama_srcdir=${script_dir}/src/llama.cpp
-    declare py_version='3\.11'
+    declare py_version='3\.14'
 
     set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-15 || exit $?
     set-alternatives g++ /usr/bin/x86_64-linux-gnu-g++-15 || exit $?
@@ -194,9 +206,11 @@ if test ."$0" = ."${BASH_SOURCE[0]}"; then
     # set-alternatives gcc /usr/bin/x86_64-linux-gnu-gcc-16 || exit $?
     # set-alternatives g++ /usr/bin/x86_64-linux-gnu-g++-16 || exit $?
     # set-alternatives gfortran /usr/bin/x86_64-linux-gnu-gfortran-16 || exit $?
+    # set-alternatives cuda /usr/local/cuda-13.2 || exit $?
     set-alternatives cuda /usr/local/cuda-13.3 || exit $?
     check-oneapi-env || exit $?
     check-cuda-env || exit $?
     verify-python "$py_version" || exit $?
     install-llama.cpp "$llama_srcdir" || exit $?
+    install-scripts "$llama_srcdir" "$install_prefix" || exit $?
 fi
