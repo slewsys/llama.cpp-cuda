@@ -1,10 +1,12 @@
---- tools/server/tests/requirements.txt~	2026-02-08 19:53:39.042434943 -0500
-+++ tools/server/tests/requirements.txt	2026-02-08 19:53:53.772779171 -0500
-@@ -1,7 +1,7 @@
+--- tools/server/tests/requirements.txt~	2026-09-03 22:06:45.706616073 -0400
++++ tools/server/tests/requirements.txt	2026-09-03 22:13:57.205187634 -0400
+@@ -1,9 +1,9 @@
 -aiohttp~=3.9.3
 -pytest~=8.3.3
 +aiohttp~=3.9.5
 +pytest~=8.3.5
+ pytest-xdist~=3.6
+ filelock~=3.16
 -numpy~=1.26.4
 +numpy~=2.4.2
  openai~=2.14.0
