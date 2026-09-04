@@ -1,14 +1,18 @@
---- tools/server/tests/requirements.txt~	2026-02-08 19:53:39.042434943 -0500
-+++ tools/server/tests/requirements.txt	2026-02-08 19:53:53.772779171 -0500
-@@ -1,7 +1,7 @@
+--- tools/server/tests/requirements.txt.~1~	2026-09-09 21:44:02.379155279 -0400
++++ tools/server/tests/requirements.txt	2026-09-09 21:49:30.956500044 -0400
+@@ -1,9 +1,9 @@
 -aiohttp~=3.9.3
 -pytest~=8.3.3
-+aiohttp~=3.9.5
-+pytest~=8.3.5
--numpy~=1.26.4
-+numpy~=2.4.2
- openai~=2.14.0
- prometheus-client~=0.20.0
++aiohttp~=3.14.3
++pytest~=9.1.1
+ pytest-xdist~=3.6
+ filelock~=3.16
+-numpy~=2.2.6
+-openai~=2.14.0
+-prometheus-client~=0.20.0
 -requests~=2.32.3
-+requests~=2.32.5
++numpy~=2.4.2
++openai~=3.8.0
++prometheus-client~=0.26.0
++requests~=2.33.1
  wget~=3.2
