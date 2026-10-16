@@ -53,6 +53,7 @@ AC_PATH_PROG([CURL_CMD],        [curl],                [], [${OPT_PREFIX}${PATH}
 AC_PATH_PROGS([DNF_CMD],        [dnf5 dnf])
 
 AC_PATH_PROG([ED_CMD],          [ed],                  [], [${LOCAL_PREFIX}${PATH}])
+AC_PATH_PROG([FIND_CMD],        [find],                [], [${OPT_PREFIX}${PATH}])
 AC_PATH_PROG([GIT_CMD],         [git],                 [], [${OPT_PREFIX}${PATH}])
 
 AC_PATH_PROGS([GREP_CMD],       [ggrep grep],          [], [${OPT_PREFIX}${PATH}])

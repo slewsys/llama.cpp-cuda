@@ -17,13 +17,15 @@
 : ${CHOWN_CMD:='@CHOWN_CMD@'}
 : ${CMAKE_CMD:='@CMAKE_CMD@'}
 : ${ED_CMD:='@ED_CMD@'}
+: ${FIND_CMD:='@FIND_CMD@'}
 : ${GIT_CMD:='@GIT_CMD@'}
 : ${GREP_CMD:='@GREP_CMD@'}
 : ${INSTALL_CMD:='@INSTALL_CMD@'}
 : ${MAKE_CMD:='@MAKE_CMD@'}
 : ${NPROC_CMD:='@NPROC_CMD@'}
 : ${PATCH_CMD:='@PATCH_CMD@'}
-: ${PIP_CMD:="${HOME}/.asdf/shims/pip"}
+: ${PIP_CMD:='@PIP_CMD@'}
+: ${PYTHON_CMD:='@PYTHON_CMD@'}
 : ${READLINK_CMD:='@READLINK_CMD@'}
 : ${RM_CMD:='@RM_CMD@'}
 : ${SED_CMD:='@SED_CMD@'}
@@ -189,6 +191,11 @@ patch-repo ()
         subdir=$($ED_CMD -e '/^+++ /s;;;' -e 's;/[^/]*$;;p' "$patchfile") || return $?
         $PATCH_CMD -d "${srcdir}/${subdir}" <"$patchfile" || return $?
     done
+
+    # Add support for DeepSeek-V4.1-Flash.
+    # Source: https://github.com/vcruz305/DeepSeek-V4.1-Flash-GGUF-DGX-Spark-recipe
+    $PYTHON_CMD ${patchdir}/../scripts/patch_llamacpp_v41.py "$srcdir" || return $?
+    $FIND_CMD "$srcdir" -type f -name '*.v41orig' -delete || return $?
 
     $CAT_CMD >&2 <<'EOF'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
