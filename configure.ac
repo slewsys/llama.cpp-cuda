@@ -74,6 +74,7 @@ AC_PATH_PROGS([RM_CMD],         [grm rm],              [], [${OPT_PREFIX}${PATH}
 
 AC_PATH_PROG([RPM_CMD],         [rpm],                 [], [${OPT_PREFIX}${PATH}])
 
+AC_PATH_PROGS([SED_CMD],        [gsed sed],            [], [${OPT_PREFIX}${PATH}])
 AC_PATH_PROGS([SORT_CMD],       [gsort sort],          [], [${OPT_PREFIX}${PATH}])
 
 AC_PATH_PROG([SUDO_CMD],        [sudo],                [], [${OPT_PREFIX}${PATH}])
