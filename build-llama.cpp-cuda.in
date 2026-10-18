@@ -192,10 +192,14 @@ patch-repo ()
         $PATCH_CMD -d "${srcdir}/${subdir}" <"$patchfile" || return $?
     done
 
+    for patchfile in "${patchdir}/llama.cpp/"*.diff; do
+        $PATCH_CMD -p1 -d "$srcdir" <"$patchfile" || return $?
+    done
+
     # Add support for DeepSeek-V4.1-Flash.
     # Source: https://github.com/vcruz305/DeepSeek-V4.1-Flash-GGUF-DGX-Spark-recipe
-    $PYTHON_CMD ${patchdir}/../scripts/patch_llamacpp_v41.py "$srcdir" || return $?
-    $FIND_CMD "$srcdir" -type f -name '*.v41orig' -delete || return $?
+    # $PYTHON_CMD ${patchdir}/../scripts/patch_llamacpp_v41.py "$srcdir" || return $?
+    # $FIND_CMD "$srcdir" -type f -name '*.v41orig' -delete || return $?
 
     $CAT_CMD >&2 <<'EOF'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
